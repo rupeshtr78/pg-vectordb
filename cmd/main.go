@@ -7,6 +7,21 @@ import (
 )
 
 func main() {
+
+	conn, err := pgembed.GormCreateConnection(pgembed.PgconnStr)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	table := "documents_gorm"
+	err = pgembed.GormCreateVectorTable(context.Background(), conn, table)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+}
+
+func RunEmbedding() {
 	// pgembed.Connect()
 	// pgembed.PgVectorDbEmbed()
 	input := []string{

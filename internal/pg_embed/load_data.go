@@ -11,7 +11,7 @@ import (
 
 func CreateConnection(ctx context.Context) (*pgx.Conn, error) {
 
-	conn, err := pgx.Connect(ctx, connStr)
+	conn, err := pgx.Connect(ctx, PgconnStr)
 	if err != nil {
 		return nil, err
 	}
