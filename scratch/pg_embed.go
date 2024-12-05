@@ -1,4 +1,4 @@
-package pgembed
+package scratch
 
 import (
 	"bytes"
@@ -7,19 +7,15 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	pgembed "pg-vector-db/internal/pg_embed"
 
 	_ "github.com/lib/pq" // PostgreSQL driver
 	"github.com/pgvector/pgvector-go"
 )
 
-const (
-	connStr  = "host=10.0.0.213 port=5555 user=rupesh dbname=vectordb sslmode=disable"
-	modelURL = "http://localhost:11434/api/embeddings" // replace with your url
-)
-
 func PgVectorDbEmbed() {
 	// Connect to the database
-	db, err := sql.Open("postgres", connStr)
+	db, err := sql.Open("postgres", pgembed.EmbedderUrl)
 	if err != nil {
 		log.Fatalf("Failed to connect to the database: %v", err)
 	}
@@ -30,7 +26,7 @@ func PgVectorDbEmbed() {
 	}
 
 	// Sample text to embed
-	text := "This is a sample text to embed."
+	text := "The quick brown fox jumps over the lazy dog. Paris is capital of France."
 
 	// Get the embedded vector
 	embeddedVector, err := embedText(text)
@@ -43,17 +39,24 @@ func PgVectorDbEmbed() {
 		log.Fatalf("Failed to insert vector: %v", err)
 	}
 
-	// Query similar vectors
-	if err := querySimilarVectors(db, embeddedVector, 5); err != nil {
-		log.Fatalf("Failed to query similar vectors: %v", err)
-	}
+	// query := "What is the capital of France?"
+
+	// embeddedQuery, err := embedText(query)
+	// if err != nil {
+	// 	log.Fatalf("Failed to embed Query: %v", err)
+	// }
+
+	// // Query similar vectors
+	// if err := QuerySimilarVectors(db, embeddedQuery, 1); err != nil {
+	// 	log.Fatalf("Failed to query similar vectors: %v", err)
+	// }
 }
 
 func embedText(text string) (pgvector.Vector, error) {
 	// Call the embedding model API
 	model := "nomic-embed-text"
 	jsonData := fmt.Sprintf(`{"model": "%s", "prompt": "%s"}`, model, text)
-	response, err := http.Post(modelURL, "application/json", bytes.NewBuffer([]byte(jsonData)))
+	response, err := http.Post(pgembed.EmbedderUrl, "application/json", bytes.NewBuffer([]byte(jsonData)))
 	if err != nil {
 		return pgvector.Vector{}, err
 	}
@@ -77,23 +80,4 @@ func embedText(text string) (pgvector.Vector, error) {
 func insertVector(db *sql.DB, text string, vector pgvector.Vector) error {
 	_, err := db.Exec("INSERT INTO embeddings (text, embedding) VALUES ($1, $2)", text, vector)
 	return err
-}
-
-func querySimilarVectors(db *sql.DB, vector pgvector.Vector, limit int) error {
-	rows, err := db.Query("SELECT text FROM embeddings ORDER BY embedding <=> $1 LIMIT $2", vector, limit)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-
-	fmt.Println("Similar texts:")
-	for rows.Next() {
-		var text string
-		if err := rows.Scan(&text); err != nil {
-			return err
-		}
-		fmt.Println(text)
-	}
-
-	return rows.Err()
 }

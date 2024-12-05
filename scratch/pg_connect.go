@@ -1,4 +1,4 @@
-package pgembed
+package scratch
 
 import (
 	"database/sql"
