@@ -27,6 +27,16 @@ func GormCreateConnection(connStr string) (*gorm.DB, error) {
 	return db, nil
 }
 
+type Documents struct {
+	ID        uint            `gorm:"primaryKey"`
+	Content   string          `gorm:"type:text"`
+	Embedding pgvector.Vector `gorm:"type:vector(768)"`
+}
+
+func (Documents) TableName() string {
+	return "documents_gorm"
+}
+
 func GormCreateVectorTable(ctx context.Context, conn *gorm.DB, tableName string) error {
 
 	fmt.Printf("Creating Vector Table %s\n", tableName)
@@ -36,17 +46,17 @@ func GormCreateVectorTable(ctx context.Context, conn *gorm.DB, tableName string)
 		return createExt.Error
 	}
 
-	dropTable := fmt.Sprintf("DROP TABLE IF EXISTS %s", tableName)
-	drop := conn.Exec(dropTable)
-	if drop.Error != nil {
-		return drop.Error
+	err := conn.Migrator().DropTable(&Documents{})
+	if err != nil {
+		return err
 	}
+	fmt.Printf("Table %s dropped\n", tableName)
 
-	createTable := fmt.Sprintf("CREATE TABLE %s (id bigserial PRIMARY KEY, content text, embedding vector(%d))", tableName, 768)
-	createVecTable := conn.Exec(createTable)
-	if createVecTable.Error != nil {
-		return createVecTable.Error
+	err = conn.Migrator().CreateTable(&Documents{})
+	if err != nil {
+		return err
 	}
+	fmt.Printf("Vector Table %s created\n", tableName)
 
 	createIndex := fmt.Sprintf("CREATE INDEX ON %s USING hnsw(embedding vector_cosine_ops)", tableName)
 	index := conn.Exec(createIndex)
@@ -54,7 +64,8 @@ func GormCreateVectorTable(ctx context.Context, conn *gorm.DB, tableName string)
 		return index.Error
 	}
 
-	fmt.Printf("Vector Table %s created\n", tableName)
+	fmt.Printf("Index created on %s\n", tableName)
+
 	return nil
 }
 
@@ -65,7 +76,12 @@ func GormLoadVectorData(ctx context.Context, input []string, embeddings [][]floa
 	}
 
 	for i, content := range input {
-		insert := conn.Exec("INSERT INTO documents (content, embedding) VALUES ($1, $2)", content, pgvector.NewVector(embeddings[i]))
+		doc := &Documents{
+			Content:   content,
+			Embedding: pgvector.NewVector(embeddings[i]),
+		}
+		// insert := conn.Exec("INSERT INTO documents (content, embedding) VALUES ($1, $2)", content, pgvector.NewVector(embeddings[i]))
+		insert := conn.Create(doc)
 		if insert.Error != nil {
 			return fmt.Errorf("failed to insert vector: %v", insert.Error)
 		}
@@ -75,4 +91,35 @@ func GormLoadVectorData(ctx context.Context, input []string, embeddings [][]floa
 
 	return nil
 
+}
+
+type VectorDB struct {
+	Content   string          `gorm:"column:content"`
+	Embedding pgvector.Vector `gorm:"column:embedding"`
+}
+
+func GormQuerySimilarVectors(ctx context.Context, db *gorm.DB, vector pgvector.Vector, limit int, table string) error {
+	// Query similar vectors using GORM
+	results := []VectorDB{}
+
+	// Build the query
+	vectorStr := "('" + vector.String() + "')"
+	order := fmt.Sprintf("embedding <=> %s", vectorStr)
+	query := db.Table(table).Select("content").Order(order).Limit(limit)
+	if query.Error != nil {
+		return query.Error
+	}
+
+	// Execute the query
+	execQuery := query.Find(&results)
+	if execQuery.Error != nil {
+		return execQuery.Error
+	}
+
+	fmt.Println("Querying VectorDb:")
+	for _, result := range results {
+		fmt.Println(result.Content)
+	}
+
+	return nil
 }

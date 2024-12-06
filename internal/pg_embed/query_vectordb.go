@@ -11,7 +11,7 @@ import (
 
 func RunQuery(ctx context.Context, conn *pgx.Conn, query []string, table string) {
 
-	embeddedQuery, err := FetchEmbeddings(query, EmbedderUrl, embedModel)
+	embeddedQuery, err := FetchEmbeddings(query, EmbedderUrl, EmbedModel)
 	if err != nil {
 		log.Fatalf("Failed to embed Query: %v", err)
 	}

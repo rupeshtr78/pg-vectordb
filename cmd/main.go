@@ -3,7 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	pgembed "pg-vector-db/internal/pg_embed"
+
+	"github.com/pgvector/pgvector-go"
 )
 
 func main() {
@@ -17,6 +20,39 @@ func main() {
 	err = pgembed.GormCreateVectorTable(context.Background(), conn, table)
 	if err != nil {
 		fmt.Println(err)
+	}
+
+	input := []string{
+		"The dog is barking",
+		"The cat is purring",
+		"The bear is growling",
+		"The lion is roaring",
+		"The tiger is snarling",
+		"The elephant is trumpeting",
+		"Animals are amazing",
+		"Sky is blue",
+	}
+	embedResults, err := pgembed.FetchEmbeddings(input, pgembed.EmbedderUrl, "nomic-embed-text")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	err = pgembed.GormLoadVectorData(context.Background(), input, embedResults, conn)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	query := []string{"which animal is roaring"}
+	embeddedQuery, err := pgembed.FetchEmbeddings(query, pgembed.EmbedderUrl, pgembed.EmbedModel)
+	if err != nil {
+		log.Fatalf("Failed to embed Query: %v", err)
+	}
+
+	queryVector := pgvector.NewVector(embeddedQuery[0])
+
+	err = pgembed.GormQuerySimilarVectors(context.Background(), conn, queryVector, 1, table)
+	if err != nil {
+		log.Fatalf("Failed to query similar vectors: %v", err)
 	}
 
 }
