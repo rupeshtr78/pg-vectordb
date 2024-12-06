@@ -1,4 +1,4 @@
-# Project Title
+# Pg Vector DB Embedding
 
 ## Overview
 This repository is a Go-based application designed for managing embeddings stored in a PostgreSQL database. It uses Docker for containerization and includes a PostgreSQL setup for development and testing.
