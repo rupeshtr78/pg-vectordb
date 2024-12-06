@@ -9,6 +9,7 @@ import (
 	pgxvector "github.com/pgvector/pgvector-go/pgx"
 )
 
+// CreateConnection creates a connection to the database
 func CreateConnection(ctx context.Context) (*pgx.Conn, error) {
 
 	conn, err := pgx.Connect(ctx, PgconnStr)
@@ -19,6 +20,7 @@ func CreateConnection(ctx context.Context) (*pgx.Conn, error) {
 	return conn, nil
 }
 
+// CreateVectorTable creates a table with vector extension
 func CreateVectorTable(ctx context.Context, conn *pgx.Conn, tableName string) error {
 
 	_, err := conn.Exec(ctx, "CREATE EXTENSION IF NOT EXISTS vector")
@@ -53,6 +55,7 @@ func CreateVectorTable(ctx context.Context, conn *pgx.Conn, tableName string) er
 	return nil
 }
 
+// LoadVectorData loads vector data into the database
 func LoadVectorData(ctx context.Context, input []string, embeddings [][]float32, conn *pgx.Conn) error {
 
 	if len(input) != len(embeddings) {

@@ -17,6 +17,7 @@ type apiResponse struct {
 	Embeddings [][]float32 `json:"embeddings"`
 }
 
+// FetchEmbeddings fetches embeddings from the embedder service
 func FetchEmbeddings(input []string, embedderUrl, model string) ([][]float32, error) {
 
 	data := &apiRequest{

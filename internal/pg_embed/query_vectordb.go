@@ -9,6 +9,7 @@ import (
 	"github.com/pgvector/pgvector-go"
 )
 
+// RunQuery runs a query against the vector database
 func RunQuery(ctx context.Context, conn *pgx.Conn, query []string, table string) {
 
 	embeddedQuery, err := FetchEmbeddings(query, EmbedderUrl, EmbedModel)
@@ -23,7 +24,7 @@ func RunQuery(ctx context.Context, conn *pgx.Conn, query []string, table string)
 	}
 }
 
-// Query similar vectors
+// Query similar vectors to a given vector
 // <-> - L2 distance
 // <#> - (negative) inner product
 // <=> - cosine distance

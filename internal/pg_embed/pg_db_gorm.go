@@ -9,6 +9,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// GormCreateConnection creates a connection to the database using GORM
 func GormCreateConnection(connStr string) (*gorm.DB, error) {
 	db, err := gorm.Open(postgres.Open(connStr), &gorm.Config{})
 	if err != nil {
@@ -37,6 +38,7 @@ func (Documents) TableName() string {
 	return "documents_gorm"
 }
 
+// GormCreateVectorTable creates a table with vector extension and hnsw index using GORM
 func GormCreateVectorTable(ctx context.Context, conn *gorm.DB, tableName string) error {
 
 	fmt.Printf("Creating Vector Table %s\n", tableName)
@@ -69,6 +71,7 @@ func GormCreateVectorTable(ctx context.Context, conn *gorm.DB, tableName string)
 	return nil
 }
 
+// GormLoadVectorData loads the vector data into the table using GORM
 func GormLoadVectorData(ctx context.Context, input []string, embeddings [][]float32, conn *gorm.DB) error {
 
 	if len(input) != len(embeddings) {
@@ -93,14 +96,15 @@ func GormLoadVectorData(ctx context.Context, input []string, embeddings [][]floa
 
 }
 
-type VectorDB struct {
+type VectorDBQuery struct {
 	Content   string          `gorm:"column:content"`
 	Embedding pgvector.Vector `gorm:"column:embedding"`
 }
 
+// GormQuerySimilarVectors queries similar vectors using GORM
 func GormQuerySimilarVectors(ctx context.Context, db *gorm.DB, vector pgvector.Vector, limit int, table string) error {
 	// Query similar vectors using GORM
-	results := []VectorDB{}
+	results := []VectorDBQuery{}
 
 	// Build the query
 	vectorStr := "('" + vector.String() + "')"
@@ -116,7 +120,7 @@ func GormQuerySimilarVectors(ctx context.Context, db *gorm.DB, vector pgvector.V
 		return execQuery.Error
 	}
 
-	fmt.Println("Querying VectorDb:")
+	fmt.Println("Getting Results from VectorDb:")
 	for _, result := range results {
 		fmt.Println(result.Content)
 	}

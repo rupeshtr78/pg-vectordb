@@ -8,6 +8,7 @@ import (
 	_ "github.com/lib/pq" // PostgreSQL driver
 )
 
+// Connect connects to the Vector database
 func Connect() {
 	// Define connection parameters
 	connStr := "host=10.0.0.213 port=5555 user=rupesh dbname=vectordb sslmode=disable"
